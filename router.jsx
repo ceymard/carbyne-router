@@ -29,6 +29,10 @@ class Router extends Eventable {
     return this;
   }
 
+  redirect(name, args = {}) {
+    throw {redirect: true, name, args};
+  }
+
   /**
    * Create a new state for our router.
    * @param {String} name The name of the state.
@@ -116,10 +120,10 @@ class Router extends Eventable {
 
       // The last state to be computed is now our parent.
       this.computed_views.set(result.parent.views);
-      // This is for rememberance of who was active
-      this.active_states.set(result.all);
       // XXX could be useful
       this.current_state = state;
+      // This is for rememberance of who was active
+      this.active_states.set(result.all);
 
       // Activate the new views.
       this.trigger('activate', state, params);
@@ -127,6 +131,9 @@ class Router extends Eventable {
     }).catch(failure => {
       console.error(failure);
 
+      if (failure.redirect) {
+        return this.go(failure.name, failure.args);
+      }
       // A state has rejected the activation.
       this.trigger('reject', failure, state, params);
 
