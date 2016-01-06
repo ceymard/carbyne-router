@@ -2,8 +2,8 @@ import {Atom, Controller} from 'carbyne';
 
 
 export class ViewAtom extends Atom {
-  constructor(name) {
-    super(null);
+  constructor(name, tag) {
+    super(tag || null);
     this.name = `View<${name}>`;
   }
 }
@@ -49,7 +49,7 @@ export function View(attrs, children) {
 
   let vctrl = new ViewController(attrs.name);
 
-  let atom = new ViewAtom(attrs.name);
+  let atom = new ViewAtom(attrs.name, attrs.tag);
   atom.addController(vctrl);
 
   if (attrs.router)
