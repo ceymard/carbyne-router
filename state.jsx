@@ -1,16 +1,110 @@
 
-import {o, merge} from 'carbyne';
+import {o, merge, Eventable} from 'carbyne';
+
+type Views = {[key : string] : () => Atom};
+
+export class State extends Eventable {
+
+	data : {[key : string]: any};
+	params : {[key : string]: string};
+	views : Views;
+	child : ?State;
+	parent : ?State;
+
+	_router : Router;
+
+	constructor(name, router, parent, params) {
+		super();
+		this.name = name;
+		this.data = merge({}, parent ? parent.data : {});
+		this.views = merge({}, parent ? parent.views : {});
+		this.params = params;
+		this.parent = parent;
+		this._controllers = [];
+		this._router = router;
+	}
+
+	addController(ctrl) {
+		this._controllers.push(ctrl);
+		ctrl.setAtom(this); // XXX
+	}
+
+  getController(cls, opts = {}) {
+
+    let res = null;
+    let state = this;
+
+    let all = opts.all;
+
+    while (state) {
+      for (let ctrl of state._controllers) {
+        if (ctrl instanceof cls) {
+          return ctrl;
+        }
+      }
+
+      state = state.parent;
+    }
+
+    return null;
+
+  }
+
+	observe(obs, cbk) {
+		this.on('destroy', o.observe(obs, cbk));
+	}
+
+	emit(event, ...args) {
+		const ev = this._mkEvent(event);
+		this.trigger(event, ...args);
+		if (this.parent) this.parent.emit(event, ...args);
+	}
+
+	broadcast(event, ...args) {
+		const ev = this._mkEvent(event);
+		this.trigger(event, ...args);
+		if (this.child) this.child.broadcast(event, ...args);
+	}
+
+	/**
+	 * Go to the given state of the current router.
+	 * Also, pre-fills the asked params.
+	 */
+	go(state_name, params) {
+		this._router.go(state_name, params);
+	}
+
+	_build(...args) : Promise {
+		return (Promise.resolve(this.build(...args))).then(views => {
+			merge(this.views, views||{})
+		});
+	}
+
+	build() : Promise<Views> {
+		/// ?????
+	}
+
+	destroy() {
+		this.trigger('destroy');
+		this.views = null;
+		this.data = null;
+		this.params = null;
+		this._router = null;
+		this._controllers = null;
+	}
+
+}
 
 /**
  * A single state, able to tell if it matches an url.
  */
 export class StateDefinition {
 
-	constructor(name, url, fn, parent, router) {
+	constructor(name, url, kls, parent, router) {
 		this.name = name;
 		this.url_part = url;
-		this.full_url = '';
-		this.fn = fn;
+		this._full_url = '';
+		this._kls = kls;
 		this.parent = parent;
 		this.param_names = [];
 		this.regexp = null;
@@ -43,12 +137,12 @@ export class StateDefinition {
 			return '([^/]+)';
 		}) + '$');
 
-		this.full_url = full_url;
+		this._full_url = full_url;
 	}
 
 	getUrl(params = {}) {
 		if (this.virtual) throw new Error('Virtual states don\'t have urls.');
-		let url = this.full_url;
+		let url = this._full_url;
 		for (let p of this.param_names) {
 			url = url.replace(`:${p}`, params[p]);
 		}
@@ -87,7 +181,7 @@ export class StateDefinition {
 	 * for changes).
 	 *
 	 * Note: the difference is checked using strict equality.
-	 * 
+	 *
 	 * @param  {Object} prev_params ...
 	 * @param  {Object} new_params  ...
 	 * @return {boolean}
@@ -107,46 +201,40 @@ export class StateDefinition {
 	 */
 	activate(params, previous) {
 
-		let newstate = null;
-		let act = null;
-
 		// If we have a parent, we start by trying to activate
 		return (this.parent ?
 			this.parent.activate(params, previous)
-		: 	Promise.resolve({parent: {views: {}, data: {}}, all: {$$params: params}})
-		).then(activation => {
-
-			act = activation;
+		: 	Promise.resolve({state: null, all: {$$params: params}})
+		).then(act => {
 
 			// If the state is already active, then there
 			// is no need to try to reactivate it, unless of course
 			// params have changed.
 			if (previous[this.name] && this._sameParams(previous.$$params, params)) {
-				newstate = act.all[this.name] = previous[this.name];
-				return null;
+				act.state = act.all[this.name] = previous[this.name];
+				return act;
 			}
 
-			newstate = {
-				name: this.name,
-				views: merge({}, act.parent.views),
-				data: merge({}, act.parent.data)
-			};
-
-			act.all[this.name] = newstate;
-
+			// Build the parameter list
 			const prms = [];
 			for (var pname of this.param_names)
 				prms.push(params[pname]);
 
-			// tell the function to give us a result
-			return this.fn.apply({
-				views: newstate.views,
-				data: newstate.data,
-				params: params,
-				router: this.router
-			}, prms);
-		}).then(res => {
-			return {parent: newstate, all: act.all};
+			// Instanciate the state
+			const state = new this._kls(
+				this.name,
+				this.router,
+				act.state,
+				params
+			);
+
+			// And then build it and forward it to the next state creator
+
+			return state._build(...prms).then(nothing => {
+				act.all[this.name] = state;
+				act.state = state;
+				return act;
+			});
 		});
 
 	}

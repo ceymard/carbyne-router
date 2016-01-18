@@ -1,7 +1,7 @@
 
 import {o, merge, Eventable} from 'carbyne';
 import {View} from './view';
-import {StateDefinition} from './state';
+import {StateDefinition, State} from './state';
 
 /**
  * A router that can link to window.location.
@@ -15,9 +15,12 @@ class Router extends Eventable {
 
     this.active_states = o({});
     this.computed_views = o({});
+    this._params = {}
     // this.query = o(null);
 
     this.current_state = null;
+
+    this._activating = false;
 
     // Query is an observable, since we don't use it in routing.
 
@@ -67,7 +70,7 @@ class Router extends Eventable {
    * and activating it.
    * If none match, go the the 'default' state if it exists.
    * Otherwise, triggers an error.
-   * 
+   *
    * @param {string} url: The url we want to go to.
    */
   setUrl(url : string) : Promise {
@@ -82,7 +85,7 @@ class Router extends Eventable {
     if (this.default) {
       // If we can't find a state matching the current URL, send
       // to the default state.
-      return this.go(this.default.name, this.default.params);      
+      return this.go(this.default.name, this.default.params);
     }
 
     throw new Error('no matching state found');
@@ -96,14 +99,24 @@ class Router extends Eventable {
    */
   go(state_name : string, params : Object = {}) : Promise {
 
+    if (this._activating)
+      this.redirect(state_name, params);
+
     const state = this._state_defs[state_name];
+    const _params = merge({}, params)
+    let x = null
+
+    for (x of state.param_names)
+      if (!(x in params)) _params[x] = this._params[x]
+
     if (!state) throw new Error('no such state');
-    if (this._linked) {
-      var url = state.getUrl(params);
-      this._triggered_change = true;
-      window.location.hash = '#' + url;
-    }
-    return this._activate(this._state_defs[state_name], params);
+    return this._activate(this._state_defs[state_name], _params).then(activated => {
+      if (this._linked) {
+        var url = this.current_state.getUrl(_params);
+        this._triggered_change = true;
+        window.location.hash = '#' + url;
+      }
+    });
 
   }
 
@@ -113,23 +126,36 @@ class Router extends Eventable {
    */
   _activate(state : State, params : Object = {}) : Promise {
 
-    this.trigger('activate:before', state, params);
+    const previous_states = this.active_states.get()
+    this.trigger('activate:before', state, params)
+    this._activating = true;
 
     // Try activating the new state.
-    return state.activate(params, this.active_states.get()).then(result => {
+    return state.activate(params, previous_states).then(result => {
 
       // The last state to be computed is now our parent.
-      this.computed_views.set(result.parent.views);
+      this.computed_views.set(result.state.views);
       // XXX could be useful
       this.current_state = state;
       // This is for rememberance of who was active
       this.active_states.set(result.all);
 
+      this._params = params
+
+      let name = null;
+
+      for (name in previous_states)
+        if (!result.all[name]) previous_states[name].destroy();
+
+      // XXX destroy the now inactive states.
+
       // Activate the new views.
       this.trigger('activate', state, params);
+      this._activating = false;
 
     }).catch(failure => {
       console.error(failure);
+      this._activating = false;
 
       if (failure.redirect) {
         return this.go(failure.name, failure.args);
@@ -204,4 +230,4 @@ class Router extends Eventable {
 }
 
 
-export {Router, View};
+export {Router, View, State};
