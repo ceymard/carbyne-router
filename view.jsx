@@ -24,7 +24,7 @@ export class ViewController extends Controller {
 
   link() {
     if (this.atom && this.router && this.atom.element)
-      this.atom.observe(this.router.computed_views.path(this.name), (v) => {
+      this.atom.observe(this.router.o_state.path(this.name), (v) => {
         if (v && typeof v !== 'function') throw new Error(`Views must be functions in '${this.name}'`);
         this.setContent(v);
       });

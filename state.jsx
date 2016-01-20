@@ -3,30 +3,19 @@ import {o, merge, Eventable} from 'carbyne';
 
 type Views = {[key : string] : () => Atom};
 
-export class State extends Eventable {
-
-	data : {[key : string]: any};
-	params : {[key : string]: string};
-	views : Views;
-	child : ?State;
-	parent : ?State;
+export class RootState extends Eventable {
 
 	_router : Router;
 
-	constructor(name, router, parent, params) {
+	constructor(router) {
 		super();
-		this.name = name;
-		this.data = merge({}, parent ? parent.data : {});
-		this.views = merge({}, parent ? parent.views : {});
-		this.params = params;
-		this.parent = parent;
 		this._controllers = [];
 		this._router = router;
 	}
 
 	addController(ctrl) {
 		this._controllers.push(ctrl);
-		ctrl.setAtom(this); // XXX
+		ctrl.setAtom(this); // XXX?
 	}
 
   getController(cls, opts = {}) {
@@ -43,52 +32,27 @@ export class State extends Eventable {
         }
       }
 
-      state = state.parent;
+      state = state.__proto__;
     }
 
     return null;
 
   }
 
-	observe(obs, cbk) {
+	$observe(obs, cbk) {
 		this.on('destroy', o.observe(obs, cbk));
-	}
-
-	emit(event, ...args) {
-		const ev = this._mkEvent(event);
-		this.trigger(event, ...args);
-		if (this.parent) this.parent.emit(event, ...args);
-	}
-
-	broadcast(event, ...args) {
-		const ev = this._mkEvent(event);
-		this.trigger(event, ...args);
-		if (this.child) this.child.broadcast(event, ...args);
 	}
 
 	/**
 	 * Go to the given state of the current router.
 	 * Also, pre-fills the asked params.
 	 */
-	go(state_name, params) {
+	$go(state_name, params) {
 		this._router.go(state_name, params);
 	}
 
-	_build(...args) : Promise {
-		return (Promise.resolve(this.build(...args))).then(views => {
-			merge(this.views, views||{})
-		});
-	}
-
-	build() : Promise<Views> {
-		/// ?????
-	}
-
-	destroy() {
+	$destroy() {
 		this.trigger('destroy');
-		this.views = null;
-		this.data = null;
-		this.params = null;
 		this._router = null;
 		this._controllers = null;
 	}
@@ -100,11 +64,11 @@ export class State extends Eventable {
  */
 export class StateDefinition {
 
-	constructor(name, url, kls, parent, router) {
+	constructor(name, url, fn, parent, router) {
 		this.name = name;
 		this.url_part = url;
 		this._full_url = '';
-		this._kls = kls;
+		this._fn = fn;
 		this.parent = parent;
 		this.param_names = [];
 		this.regexp = null;
@@ -204,7 +168,7 @@ export class StateDefinition {
 		// If we have a parent, we start by trying to activate
 		return (this.parent ?
 			this.parent.activate(params, previous)
-		: 	Promise.resolve({state: null, all: {$$params: params}})
+		: 	Promise.resolve({state: new RootState(this._router), all: {$$params: params}})
 		).then(act => {
 
 			// If the state is already active, then there
@@ -220,21 +184,26 @@ export class StateDefinition {
 			for (var pname of this.param_names)
 				prms.push(params[pname]);
 
-			// Instanciate the state
-			const state = new this._kls(
-				this.name,
-				this.router,
-				act.state,
-				params
-			);
+			const self = this
+			/**
+			 * Creating the state function.
+			 */
+			const StateInstance = function () {
+				this._name = self.name
+				this._definition = self
+				this.$params = params
+				this._listeners = {}
+				this._controllers = []
+			}
 
-			// And then build it and forward it to the next state creator
+			StateInstance.prototype = act.state
+			const state = new StateInstance
 
-			return state._build(...prms).then(nothing => {
+			return Promise.resolve(this._fn.apply(state, prms)).then(nothing => {
 				act.all[this.name] = state;
 				act.state = state;
 				return act;
-			});
+			})
 		});
 
 	}

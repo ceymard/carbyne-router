@@ -13,12 +13,10 @@ class Router extends Eventable {
 
     this._state_defs = {};
 
-    this.active_states = o({});
-    this.computed_views = o({});
-    this._params = {}
-    // this.query = o(null);
+    this.o_active_states = o({});
+    this.o_state = o({})
 
-    this.current_state = null;
+    this._params = {}
 
     this._activating = false;
 
@@ -126,7 +124,7 @@ class Router extends Eventable {
    */
   _activate(state : State, params : Object = {}) : Promise {
 
-    const previous_states = this.active_states.get()
+    const previous_states = this.o_active_states.get()
     this.trigger('activate:before', state, params)
     this._activating = true;
 
@@ -134,18 +132,16 @@ class Router extends Eventable {
     return state.activate(params, previous_states).then(result => {
 
       // The last state to be computed is now our parent.
-      this.computed_views.set(result.state.views);
       // XXX could be useful
-      this.current_state = state;
-      // This is for rememberance of who was active
-      this.active_states.set(result.all);
-
+      this.o_active_states.set(result.all)
+      this.o_state.set(result.state)
       this._params = params
 
       let name = null;
 
+      console.log(previous_states)
       for (name in previous_states)
-        if (!result.all[name]) previous_states[name].destroy();
+        if (!result.all[name]) previous_states[name].$destroy();
 
       // XXX destroy the now inactive states.
 
@@ -200,7 +196,8 @@ class Router extends Eventable {
           if (active) atom.element.classList.add('state-active');
           else atom.element.classList.remove('state-active');
 
-          if (this.current_state === this._state_defs[name])
+          // FIXME this is bugged
+          if (this.o_state.get()._name === this._state_defs[name])
             atom.element.classList.add('state-current');
           else
             atom.element.classList.remove('state-current');
@@ -211,7 +208,7 @@ class Router extends Eventable {
           atom.element.href = '#' + state.getUrl(params);
         });
 
-        atom.observe(this.active_states, (states) => {
+        atom.observe(this.o_active_states, (states) => {
           if (!states[name]) return evaluate(false);
           if (!params) return evaluate(true);
 
