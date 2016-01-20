@@ -15,6 +15,7 @@ class Router extends Eventable {
 
     this.o_active_states = o({});
     this.o_state = o({})
+    this.current_state_def = null
 
     this._params = {}
 
@@ -101,6 +102,8 @@ class Router extends Eventable {
       this.redirect(state_name, params);
 
     const state = this._state_defs[state_name];
+    if (!state) throw new Error(`no such state ${state_name}`)
+
     const _params = merge({}, params)
     let x = null
 
@@ -110,7 +113,7 @@ class Router extends Eventable {
     if (!state) throw new Error('no such state');
     return this._activate(this._state_defs[state_name], _params).then(activated => {
       if (this._linked) {
-        var url = this.current_state.getUrl(_params);
+        var url = this.current_state_def.getUrl(_params);
         this._triggered_change = true;
         window.location.hash = '#' + url;
       }
@@ -135,6 +138,7 @@ class Router extends Eventable {
       // XXX could be useful
       this.o_active_states.set(result.all)
       this.o_state.set(result.state)
+      this.current_state_def = result.state._definition
       this._params = params
 
       let name = null;

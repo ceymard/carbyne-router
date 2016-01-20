@@ -72,7 +72,7 @@ export class StateDefinition {
 		this.parent = parent;
 		this.param_names = [];
 		this.regexp = null;
-		this.router = router;
+		this._router = router;
 
 		this.view_functions = null;
 		this.active_data = null;
