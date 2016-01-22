@@ -73,6 +73,7 @@ class Router extends Eventable {
    * @param {string} url: The url we want to go to.
    */
   setUrl(url : string) : Promise {
+
     for (let name in this._state_defs) {
       let st = this._state_defs[name];
       let params = st.match(url);

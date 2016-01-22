@@ -96,9 +96,9 @@ export class StateDefinition {
 			parent = parent.parent;
 		}
 
-		this.regexp = new RegExp('^' + full_url.replace(/:[a-zA-Z_$]\w*/g, (v) => {
-			this.param_names.push(v.slice(1)); // remove the leading :
-			return '([^/]+)';
+		this.regexp = new RegExp('^' + full_url.replace(/:[a-zA-Z_$]\w*/g, name => {
+			this.param_names.push(name.slice(1)); // remove the leading :
+			return '(\\d+)';
 		}) + '$');
 
 		this._full_url = full_url;
