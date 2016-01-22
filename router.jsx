@@ -143,7 +143,7 @@ class Router extends Eventable {
 
       let name = null;
 
-      console.log(previous_states)
+      // console.log(previous_states)
       for (name in previous_states)
         if (!result.all[name]) previous_states[name].$destroy();
 
