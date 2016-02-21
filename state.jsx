@@ -5,8 +5,6 @@ type Views = {[key : string] : () => Atom};
 
 export class RootState extends Eventable {
 
-	_router : Router;
-
 	constructor(router) {
 		super();
 		this._controllers = [];
