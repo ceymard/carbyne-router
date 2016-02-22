@@ -4,8 +4,5 @@
   "repository": "https://github.com/ceymard/carbyne-router",
   "description": "A client-side router for Carbyne.",
   "license": "MIT",
-  "main": "./router",
-  "dependencies": {
-  	"carbyne": "^0.1.1"
-  }
+  "main": "./router"
 }
