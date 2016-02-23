@@ -26,8 +26,8 @@ class Router extends Eventable {
     this._linked = false; // true if linked to location.
   }
 
-  default(name, args) {
-    this.default = {name, args};
+  default(name, params) {
+    this.default = {name, params};
     return this;
   }
 
