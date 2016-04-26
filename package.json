@@ -1,6 +1,6 @@
 {
   "name": "carbyne-router",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "repository": "https://github.com/ceymard/carbyne-router",
   "description": "A client-side router for Carbyne.",
   "license": "MIT",
