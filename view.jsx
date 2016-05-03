@@ -31,8 +31,9 @@ export class ViewController extends Controller {
   }
 
   setContent(c) {
-    this.atom.empty() // detach the children, remove the children.
-    this.atom.append(c)
+    this.atom.empty().then(e => {
+      this.atom.append(c)
+    }) // detach the children, remove the children.
   }
 
   setRouter(router) {

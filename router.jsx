@@ -97,7 +97,7 @@ class Router extends Eventable {
    * @param  {[type]} params     [description]
    * @return {Promise} A promise that tells when the state has been fully activated.
    */
-  go(state_name, params) {
+  go(state_name, params = {}) {
 
     if (this._activating)
       this.redirect(state_name, params);
