@@ -5,34 +5,34 @@ import {o, merge, Eventable} from 'carbyne';
 export class RootState extends Eventable {
 
 	constructor(router) {
-		super();
-		this._controllers = [];
-		this._router = router;
+		super()
+		this._controllers = []
+		this._router = router
 	}
 
 	addController(ctrl) {
-		this._controllers.push(ctrl);
-		ctrl.setAtom(this); // XXX?
+		this._controllers.push(ctrl)
+		ctrl.setAtom(this) // XXX?
 	}
 
   getController(cls, opts = {}) {
 
-    let res = null;
-    let state = this;
+    let res = null
+    let state = this
 
-    let all = opts.all;
+    let all = opts.all
 
     while (state) {
       for (let ctrl of state._controllers) {
         if (ctrl instanceof cls) {
-          return ctrl;
+          return ctrl
         }
       }
 
-      state = state.__proto__;
+      state = state.__proto__
     }
 
-    return null;
+    return null
 
   }
 
@@ -47,7 +47,7 @@ export class RootState extends Eventable {
 	$go(state_name, params) { console.warn('$ methods are deprecated'); this.go.apply(this, arguments) }
 
 	destroy() {
-		this._trigger('destroy')
+		this.trigger('destroy')
 		this._router = null
 		this._controllers = null
 	}
@@ -62,78 +62,78 @@ export class RootState extends Eventable {
 export class StateDefinition {
 
 	constructor(name, url, fn, parent, router) {
-		this.name = name;
-		this.url_part = url;
-		this._full_url = '';
-		this._fn = fn;
-		this.parent = parent;
-		this.param_names = [];
-		this.regexp = null;
-		this._router = router;
+		this.name = name
+		this.url_part = url
+		this._full_url = ''
+		this._fn = fn
+		this.parent = parent
+		this.param_names = []
+		this.regexp = null
+		this._router = router
 
-		this.view_functions = null;
-		this.active_data = null;
-		this.virtual = false;
+		this.view_functions = null
+		this.active_data = null
+		this.virtual = false
 
-		this.build();
+		this.build()
 	}
 
 	deactivate() {
-		this.is_active.set(false);
-		this.view_functions = null;
-		this.active_data = null;
+		this.is_active.set(false)
+		this.view_functions = null
+		this.active_data = null
 	}
 
 	build() {
-		let full_url = this.url_part;
-		let parent = this.parent;
+		let full_url = this.url_part
+		let parent = this.parent
 
 		while (parent) {
-			full_url = `${parent.url_part}${full_url}`;
-			parent = parent.parent;
+			full_url = `${parent.url_part}${full_url}`
+			parent = parent.parent
 		}
 
 		this.regexp = new RegExp('^' + full_url.replace(/:[a-zA-Z_$]\w*/g, name => {
-			this.param_names.push(name.slice(1)); // remove the leading :
-			return '(\\d+)';
-		}) + '$');
+			this.param_names.push(name.slice(1)) // remove the leading :
+			return '(\\d+)'
+		}) + '$')
 
-		this._full_url = full_url;
+		this._full_url = full_url
 	}
 
 	getUrl(params = {}) {
-		if (this.virtual) throw new Error('Virtual states don\'t have urls.');
-		let url = this._full_url;
+		if (this.virtual) throw new Error('Virtual states don\'t have urls.')
+		let url = this._full_url
 		for (let p of this.param_names) {
-			url = url.replace(`:${p}`, params[p]);
+			url = url.replace(`:${p}`, params[p])
 		}
-		return url;
+		return url
 	}
 
 	match(url) {
-		if (this.virtual) return null;
+		if (this.virtual) return null
 
-		let matches = this.regexp.exec(url);
+		let matches = this.regexp.exec(url)
 
 		// this state does not match the url.
-		if (!matches) return null;
+		if (!matches) return null
 
 		// build the params.
-		let params = {};
-		let pars = this.param_names;
-		let l = this.param_names.length;
+		let params = {}
+		let pars = this.param_names
+		let l = this.param_names.length
 		for (let i = 0; i < l; i++) {
-			params[pars[i]] = matches[i + 1];
+			params[pars[i]] = matches[i + 1]
 		}
-		return params;
+		return params
 	}
 
 	isParent(state) {
 		while (state.parent) {
-			if (state === this) return true;
-			state = state.parent;
+			if (state === this) return true
+			state = state.parent
 		}
-		return false;
+		return false
 	}
 
 	/**
@@ -147,7 +147,7 @@ export class StateDefinition {
 	 * @param  {Object} new_params  ...
 	 * @return {boolean}
 	 */
-	_sameParams(prev_params : Object, new_params : Object) : boolean {
+	_sameParams(prev_params, new_params) {
 		for (var name of this.param_names) {
 			if (prev_params[name] !== new_params[name])
 				return false;
@@ -172,14 +172,14 @@ export class StateDefinition {
 			// is no need to try to reactivate it, unless of course
 			// params have changed.
 			if (previous[this.name] && this._sameParams(previous.$$params, params)) {
-				act.state = act.all[this.name] = previous[this.name];
-				return act;
+				act.state = act.all[this.name] = previous[this.name]
+				return act
 			}
 
 			// Build the parameter list
-			const prms = [];
+			const prms = []
 			for (var pname of this.param_names)
-				prms.push(params[pname]);
+				prms.push(params[pname])
 
 			const self = this
 			/**
@@ -197,14 +197,13 @@ export class StateDefinition {
 			const state = new StateInstance
 
 			return Promise.resolve(this._fn.apply(state, prms)).then(nothing => {
-				act.all[this.name] = state;
-				act.state = state;
-				return act;
+				act.all[this.name] = state
+				act.state = state
+				return act
 			})
-		});
+		})
 
 	}
 
 
 }
-
