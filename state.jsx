@@ -1,7 +1,6 @@
 
 import {o, merge, Eventable} from 'carbyne';
 
-type Views = {[key : string] : () => Atom};
 
 export class RootState extends Eventable {
 
@@ -37,23 +36,23 @@ export class RootState extends Eventable {
 
   }
 
-	$observe(obs, cbk) {
-		this.on('destroy', o.observe(obs, cbk));
-	}
+	observe(obs, cbk) { this.on('destroy', o.observe(obs, cbk)) }
+	$observe(obs, cbk) { console.warn('$ methods are deprecated'); this.observe.apply(this, arguments) }
 
 	/**
 	 * Go to the given state of the current router.
 	 * Also, pre-fills the asked params.
 	 */
-	$go(state_name, params) {
-		this._router.go(state_name, params);
+	go(state_name, params) { this._router.go(state_name, params) }
+	$go(state_name, params) { console.warn('$ methods are deprecated'); this.go.apply(this, arguments) }
+
+	destroy() {
+		this._trigger('destroy')
+		this._router = null
+		this._controllers = null
 	}
 
-	$destroy() {
-		this.trigger('destroy');
-		this._router = null;
-		this._controllers = null;
-	}
+	$destroy() { console.warn('$ methods are deprecated'); this.destroy() }
 
 }
 
