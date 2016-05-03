@@ -1,7 +1,7 @@
-import {Atom, Controller} from 'carbyne';
+import {VirtualAtom, Controller} from 'carbyne';
 
 
-export class ViewAtom extends Atom {
+export class ViewAtom extends VirtualAtom {
   constructor(name, tag) {
     super(tag || null)
     this.name = `View<${name}>`
@@ -23,11 +23,12 @@ export class ViewController extends Controller {
   }
 
   link() {
-    if (this.atom && this.router && this.atom.element)
+    if (this.atom && this.router) {
       this.atom.observe(this.router.o_state.path(this.name), (v) => {
         if (v && typeof v !== 'function') throw new Error(`Views must be functions in '${this.name}'`)
         this.setContent(v)
       })
+    }
   }
 
   setContent(c) {
