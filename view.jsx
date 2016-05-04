@@ -13,6 +13,8 @@ export class ViewController extends Controller {
   constructor(name) {
     super()
     this.name = name
+    this._next_content = null
+    this.router = null
   }
 
   onMount() {
@@ -32,8 +34,14 @@ export class ViewController extends Controller {
   }
 
   setContent(c) {
+    var has_next_content_already = this._next_content !== null
+
+    this._next_content = c
+    if (has_next_content_already) return
+
     this.atom.empty().then(e => {
-      this.atom.append(c)
+      this.atom.append(this._next_content)
+      this._next_content = null
     }) // detach the children, remove the children.
   }
 
