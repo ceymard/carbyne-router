@@ -4,5 +4,8 @@
   "repository": "https://github.com/ceymard/carbyne-router",
   "description": "A client-side router for Carbyne.",
   "license": "MIT",
-  "main": "./router"
+  "main": "./router",
+  "devDependencies": {
+    "babel-preset-es2015-loose": "^7.0.0"
+  }
 }
