@@ -22,7 +22,7 @@ export class State extends Eventable {
 		this._router = router
 	}
 
-	__init__(...args: any[]) : Promise<any> {
+	__init__(...args: any[]) : Promise<any>|void {
 		// Initialise the state.
 		return Promise.resolve(true)
 	}

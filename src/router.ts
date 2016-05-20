@@ -108,7 +108,7 @@ class Router extends Eventable {
    * @param  {[type]} params     [description]
    * @return {Promise} A promise that tells when the state has been fully activated.
    */
-  go(state_name, params = {}) {
+  go(state_name: string, params = {}) {
 
     if (this._activating)
       this.redirect(state_name, params);
@@ -200,7 +200,7 @@ class Router extends Eventable {
   /**
    * A decorator that sets up the href
    */
-  href(name, params) {
+  href(name: string, params?: Object) {
     return (atom) => {
       let state = this._state_defs[name]
 
@@ -211,7 +211,7 @@ class Router extends Eventable {
           if (active) atom.element.classList.add('state-active')
           else atom.element.classList.remove('state-active')
 
-          if (this.o_state.get()._name === this._state_defs[name])
+          if (this.o_state.get().name === name)
             atom.element.classList.add('state-current')
           else
             atom.element.classList.remove('state-current')

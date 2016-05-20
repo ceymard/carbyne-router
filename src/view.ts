@@ -52,7 +52,7 @@ export class ViewController extends Controller {
     }).catch(e => console.error(e)) // detach the children, remove the children.
   }
 
-  setRouter(router) {
+  setRouter(router: Router) {
     this.router = router
     this.link()
   }
