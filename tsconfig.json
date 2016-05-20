@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "declaration": true,
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "noLib": false
+    },
+    "filesGlob": [
+        "./**/*.ts",
+        "!./node_modules/**/*.ts"
+    ],
+    "files": [
+        "./src/router.ts",
+        "./typings/es6-promise/es6-promise.d.ts"
+    ]
+
+}

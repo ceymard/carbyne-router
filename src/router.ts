@@ -1,5 +1,5 @@
 
-import {o, merge, Eventable} from 'carbyne';
+import {o, merge, Eventable, Observable} from 'carbyne';
 import {View} from './view';
 import {StateDefinition, State} from './state';
 
@@ -7,6 +7,17 @@ import {StateDefinition, State} from './state';
  * A router that can link to window.location.
  */
 class Router extends Eventable {
+
+  public o_state: Observable<State>
+  public o_active_states: Observable<{[name: string]: State}>
+  public current_state_def: StateDefinition
+
+  private _params: {}
+  private _activating: boolean
+  private _state_defs: {[name: string]: StateDefinition}
+  private _linked: boolean
+  private _default: {name: string, params: {}}
+  private _triggered_change = false
 
   constructor() {
     super()
@@ -27,7 +38,7 @@ class Router extends Eventable {
   }
 
   default(name, params) {
-    this.default = {name, params}
+    this._default = {name, params}
     return this
   }
 
@@ -82,10 +93,10 @@ class Router extends Eventable {
       }
     }
 
-    if (this.default) {
+    if (this._default) {
       // If we can't find a state matching the current URL, send
       // to the default state.
-      return this.go(this.default.name, this.default.params)
+      return this.go(this._default.name, this._default.params)
     }
 
     throw new Error('no matching state found')

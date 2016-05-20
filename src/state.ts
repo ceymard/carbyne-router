@@ -1,26 +1,37 @@
 
-import {o, merge, Eventable} from 'carbyne';
+import {o, merge, Eventable, Controller, Observable, Observer} from 'carbyne';
+import {Router} from './router'
 
 
-export class RootState extends Eventable {
+/**
+ *
+ */
+export class State extends Eventable {
 
-	constructor(router) {
+	_controllers: Array<Controller>
+	_router: Router
+	__proto__: State
+
+	constructor(router: Router) {
 		super()
 		this._controllers = []
 		this._router = router
 	}
 
-	addController(ctrl) {
+	init() : Promise<any> {
+		// Initialise the state.
+		return Promise.resolve(true)
+	}
+
+	addController(ctrl: Controller) {
 		this._controllers.push(ctrl)
 		ctrl.setAtom(this) // XXX?
 	}
 
-  getController(cls, opts = {}) {
+  getController(cls) {
 
     let res = null
-    let state = this
-
-    let all = opts.all
+    let state = this as State
 
     while (state) {
       for (let ctrl of state._controllers) {
@@ -36,23 +47,19 @@ export class RootState extends Eventable {
 
   }
 
-	observe(obs, cbk) { this.on('destroy', o.observe(obs, cbk)) }
-	$observe(obs, cbk) { console.warn('$ methods are deprecated'); this.observe.apply(this, arguments) }
+	observe<T>(obs: Observable<T>, cbk: Observer<T>) { this.on('destroy', obs.addObserver(o(cbk))) }
 
 	/**
 	 * Go to the given state of the current router.
 	 * Also, pre-fills the asked params.
 	 */
-	go(state_name, params) { this._router.go(state_name, params) }
-	$go(state_name, params) { console.warn('$ methods are deprecated'); this.go.apply(this, arguments) }
+	go(state_name: string, params: Object) { this._router.go(state_name, params) }
 
 	destroy() {
 		this.trigger('destroy')
 		this._router = null
 		this._controllers = null
 	}
-
-	$destroy() { console.warn('$ methods are deprecated'); this.destroy() }
 
 }
 
@@ -61,7 +68,21 @@ export class RootState extends Eventable {
  */
 export class StateDefinition {
 
-	constructor(name, url, fn, parent, router) {
+	public is_active: Observable<boolean>
+	public name: string
+	public url_part: string
+	public param_names: Array<string>
+	public regexp: RegExp
+	public virtual: boolean
+
+	public parent: StateDefinition
+	public router: Router
+
+	private _fn: () => Promise<any>
+	private _full_url: string
+	private _router: Router
+
+	constructor(name: string, url: string, fn, parent, router) {
 		this.name = name
 		this.url_part = url
 		this._full_url = ''
@@ -71,8 +92,6 @@ export class StateDefinition {
 		this.regexp = null
 		this._router = router
 
-		this.view_functions = null
-		this.active_data = null
 		this.virtual = false
 
 		this.build()
@@ -80,8 +99,6 @@ export class StateDefinition {
 
 	deactivate() {
 		this.is_active.set(false)
-		this.view_functions = null
-		this.active_data = null
 	}
 
 	build() {
@@ -165,7 +182,7 @@ export class StateDefinition {
 		// If we have a parent, we start by trying to activate
 		return (this.parent ?
 			this.parent.activate(params, previous)
-		: 	Promise.resolve({state: new RootState(this._router), all: {$$params: params}})
+		: 	Promise.resolve({state: new State(this._router), all: {$$params: params}})
 		).then(act => {
 
 			// If the state is already active, then there

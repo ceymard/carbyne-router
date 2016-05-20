@@ -1,15 +1,22 @@
-import {VirtualAtom, Controller} from 'carbyne';
+import {VirtualAtom, Controller} from 'carbyne'
+import {Router} from './router'
 
 
 export class ViewAtom extends VirtualAtom {
-  constructor(name, tag) {
-    super(tag || null)
+  constructor(name) {
+    super()
     this.name = `View<${name}>`
   }
 }
 
 
 export class ViewController extends Controller {
+
+  public name: string
+  public router: Router
+
+  private _next_content: any
+
   constructor(name) {
     super()
     this.name = name
@@ -59,7 +66,7 @@ export function View(attrs, children) {
 
   let vctrl = new ViewController(attrs.name)
 
-  let atom = new ViewAtom(attrs.name, attrs.tag)
+  let atom = new ViewAtom(attrs.name)
   atom.addController(vctrl)
 
   if (attrs.router)
