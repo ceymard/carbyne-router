@@ -1,18 +1,17 @@
 
 import {o, merge, Eventable, Observable} from 'carbyne';
-import {View} from './view';
 import {StateDefinition, State} from './state';
 
 /**
  * A router that can link to window.location.
  */
-class Router extends Eventable {
+export class Router extends Eventable {
 
   public o_state: Observable<State>
   public o_active_states: Observable<{[name: string]: State}>
   public current_state_def: StateDefinition
 
-  private _params: {}
+  private _params: Object
   private _activating: boolean
   private _state_defs: {[name: string]: StateDefinition}
   private _linked: boolean
@@ -239,6 +238,3 @@ class Router extends Eventable {
   }
 
 }
-
-
-export {Router, View, State}

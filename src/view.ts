@@ -1,4 +1,4 @@
-import {VirtualAtom, Controller} from 'carbyne'
+import {VirtualAtom, Controller, BasicAttributes} from 'carbyne'
 import {Router} from './router'
 
 
@@ -59,8 +59,8 @@ export class ViewController extends Controller {
 }
 
 
-export type ViewAttributes = {
-  name: string,
+export interface ViewAttributes extends BasicAttributes {
+  name: string
   router?: Router
 }
 

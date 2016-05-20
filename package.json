@@ -4,8 +4,8 @@
   "repository": "https://github.com/ceymard/carbyne-router",
   "description": "A client-side router for Carbyne.",
   "license": "MIT",
-  "main": "./src/router.js",
-  "typings": "./src/router.d.ts",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
   "scripts": {
     "build": "tsc"
   }
