@@ -1,5 +1,5 @@
 
-import {o, merge, Eventable, Controller, Observable, Observer} from 'carbyne';
+import {o, merge, Eventable, Observable, Observer} from 'carbyne';
 import {Router} from './router'
 
 
@@ -11,14 +11,12 @@ export class State extends Eventable {
 	public name: string
 	private _definition: StateDefinition
 
-	private _controllers: Array<Controller>
 	private _router: Router
 	private __proto__: State
 
 	constructor(name: string, router: Router) {
 		super()
 		this.name = name
-		this._controllers = []
 		this._router = router
 	}
 
@@ -26,30 +24,6 @@ export class State extends Eventable {
 		// Initialise the state.
 		return Promise.resolve(true)
 	}
-
-	addController(ctrl: Controller) {
-		this._controllers.push(ctrl)
-		ctrl.setAtom(this) // XXX?
-	}
-
-  getController(cls) {
-
-    let res = null
-    let state = this as State
-
-    while (state) {
-      for (let ctrl of state._controllers) {
-        if (ctrl instanceof cls) {
-          return ctrl
-        }
-      }
-
-      state = state.__proto__
-    }
-
-    return null
-
-  }
 
 	observe<T>(obs: Observable<T>, cbk: Observer<T>) { this.on('destroy', obs.addObserver(o(cbk))) }
 
@@ -62,7 +36,6 @@ export class State extends Eventable {
 	destroy() {
 		this.trigger('destroy')
 		this._router = null
-		this._controllers = null
 	}
 
 }
