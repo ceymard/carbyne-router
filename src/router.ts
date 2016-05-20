@@ -194,7 +194,7 @@ class Router extends Eventable {
     }
 
     window.addEventListener('hashchange', change)
-    change()
+    change(null)
   }
 
   /**
@@ -219,7 +219,7 @@ class Router extends Eventable {
         }
 
         atom.observe(params, (p) => {
-          atom.element.href = '#' + state.getUrl(params)
+          atom.element.href = state ? '#' + state.getUrl(params) : ''
         })
 
         atom.observe(this.o_active_states, (states) => {

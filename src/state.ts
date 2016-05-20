@@ -8,17 +8,21 @@ import {Router} from './router'
  */
 export class State extends Eventable {
 
-	_controllers: Array<Controller>
-	_router: Router
-	__proto__: State
+	public name: string
+	private _definition: StateDefinition
 
-	constructor(router: Router) {
+	private _controllers: Array<Controller>
+	private _router: Router
+	private __proto__: State
+
+	constructor(name: string, router: Router) {
 		super()
+		this.name = name
 		this._controllers = []
 		this._router = router
 	}
 
-	init() : Promise<any> {
+	__init__(...args: any[]) : Promise<any> {
 		// Initialise the state.
 		return Promise.resolve(true)
 	}
@@ -78,15 +82,15 @@ export class StateDefinition {
 	public parent: StateDefinition
 	public router: Router
 
-	private _fn: () => Promise<any>
+	private _kls: typeof State
 	private _full_url: string
 	private _router: Router
 
-	constructor(name: string, url: string, fn, parent, router) {
+	constructor(name: string, url: string, kls: typeof State, parent, router) {
 		this.name = name
 		this.url_part = url
 		this._full_url = ''
-		this._fn = fn
+		this._kls = kls
 		this.parent = parent
 		this.param_names = []
 		this.regexp = null
@@ -182,7 +186,7 @@ export class StateDefinition {
 		// If we have a parent, we start by trying to activate
 		return (this.parent ?
 			this.parent.activate(params, previous)
-		: 	Promise.resolve({state: new State(this._router), all: {$$params: params}})
+		: 	Promise.resolve({state: new State('__root__', this._router), all: {$$params: params}})
 		).then(act => {
 
 			// If the state is already active, then there
@@ -198,22 +202,21 @@ export class StateDefinition {
 			for (var pname of this.param_names)
 				prms.push(params[pname])
 
-			const self = this
-			/**
-			 * Creating the state function.
-			 */
-			const StateInstance = function () {
-				this._name = self.name
-				this._definition = self
-				this.$params = params
-				this._listeners = {}
-				this._controllers = []
+			const kls = this._kls
+			const own_init = kls.prototype.hasOwnProperty('__init__') ? kls.prototype.__init__ : null
+			const state = new kls(this.name, this._router)
+
+			// Récupération des valeurs par copie brutale.
+			for (let name in act.state) {
+				if (act.state.hasOwnProperty(name)) {
+					state[name] = act.state[name]
+				}
 			}
 
-			StateInstance.prototype = act.state
-			const state = new StateInstance
+			// StateInstance.prototype = act.state
+			// const state = new StateInstance
 
-			return Promise.resolve(this._fn.apply(state, prms)).then(nothing => {
+			return Promise.resolve(own_init ? own_init.apply(state, prms) : null).then(nothing => {
 				act.all[this.name] = state
 				act.state = state
 				return act
