@@ -1,4 +1,4 @@
-import {VirtualAtom, Controller, BasicAttributes} from 'carbyne'
+import {VirtualAtom, Controller, BasicAttributes, Appendable} from 'carbyne'
 import {Router} from './router'
 
 
@@ -17,7 +17,7 @@ export class ViewController extends Controller {
   public name: string
   public router: Router
 
-  private _next_content: Function
+  private _next_content: () => Appendable
 
   constructor(name: string) {
     super()
@@ -42,7 +42,7 @@ export class ViewController extends Controller {
     }
   }
 
-  setContent(c: Function) {
+  setContent(c: () => Appendable) {
     var has_next_content_already = this._next_content !== null
 
     this._next_content = c

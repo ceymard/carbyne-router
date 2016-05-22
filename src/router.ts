@@ -36,12 +36,12 @@ export class Router extends Eventable {
     this._linked = false // true if linked to location.
   }
 
-  default(name, params) {
+  default(name: string, params: any) {
     this._default = {name, params}
     return this
   }
 
-  redirect(name, args = {}) {
+  redirect(name: string, args: any = {}) {
     throw {redirect: true, name, args}
   }
 
@@ -50,16 +50,16 @@ export class Router extends Eventable {
    * @param {String} name The name of the state.
    * @param {object} desc The full description of the state.
    */
-  state(name, url, fn) {
+  state(name: string, url: string, fn: typeof State) {
 
     if (this._state_defs[name]) throw new Error(`state '${name}' is already defined`)
 
     let parent_idx = name.lastIndexOf('.')
-    let parent = null
+    let parent: StateDefinition = null
     if (parent_idx > -1) {
-      parent = name.substring(0, parent_idx)
-      if (!this._state_defs[parent]) throw new Error(`parent state '${parent}' does not exist`)
-      parent = this._state_defs[parent]
+      let parent_name = name.substring(0, parent_idx)
+      if (!this._state_defs[parent_name]) throw new Error(`parent state '${parent_name}' does not exist`)
+      parent = this._state_defs[parent_name]
     }
 
     let state = new StateDefinition(name, url, fn, parent, this)
@@ -68,7 +68,7 @@ export class Router extends Eventable {
     return this;
   }
 
-  virtualState(name, url, fn) {
+  virtualState(name: string, url: string, fn: typeof State) {
     this.state(name, url, fn)
     this._state_defs[name].virtual = true
     return this
@@ -82,7 +82,7 @@ export class Router extends Eventable {
    *
    * @param {string} url: The url we want to go to.
    */
-  setUrl(url) {
+  setUrl(url: string) {
 
     for (let name in this._state_defs) {
       let st = this._state_defs[name]
@@ -116,13 +116,12 @@ export class Router extends Eventable {
     if (!state) throw new Error(`no such state ${state_name}`)
 
     const _params = merge({}, params)
-    let x = null
 
-    for (x of state.param_names)
+    for (let x of state.param_names)
       if (!(x in params)) _params[x] = this._params[x]
 
     if (!state) throw new Error('no such state');
-    return this._activate(this._state_defs[state_name], _params).then(activated => {
+    return this._activate(this._state_defs[state_name], _params).then(() => {
       if (this._linked) {
         var url = this.current_state_def.getUrl(_params);
         this._triggered_change = true;
@@ -136,7 +135,7 @@ export class Router extends Eventable {
    * Perform the activation of the new state.
    * If the activation raised an error, triggers the 'reject' event.
    */
-  _activate(state, params) {
+  _activate(state: StateDefinition, params: Object): Promise<any> {
 
     const previous_states = this.o_active_states.get()
     this.trigger('activate:before', state, params)
