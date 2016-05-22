@@ -3,10 +3,12 @@ import {Router} from './router'
 
 
 export class ViewAtom extends VirtualAtom {
-  constructor(name) {
-    super()
+
+  constructor(name: string) {
+    super(`view<${name}>`)
     this.name = `View<${name}>`
   }
+
 }
 
 
@@ -15,9 +17,9 @@ export class ViewController extends Controller {
   public name: string
   public router: Router
 
-  private _next_content: any
+  private _next_content: Function
 
-  constructor(name) {
+  constructor(name: string) {
     super()
     this.name = name
     this._next_content = null
@@ -33,14 +35,14 @@ export class ViewController extends Controller {
 
   link() {
     if (this.atom && this.router) {
-      this.atom.observe(this.router.o_state.prop(this.name), (v) => {
+      this.atom.observe(this.router.o_state.prop<Function>(this.name), (v) => {
         if (v && typeof v !== 'function') throw new Error(`Views must be functions in '${this.name}'`)
         this.setContent(v ? v.bind(this.router.o_state.get()) : null)
       })
     }
   }
 
-  setContent(c) {
+  setContent(c: Function) {
     var has_next_content_already = this._next_content !== null
 
     this._next_content = c
@@ -67,7 +69,9 @@ export interface ViewAttributes extends BasicAttributes {
 /**
  * A view is a virtual node.
  */
-export function View(attrs: ViewAttributes, children) {
+export function View(attrs: ViewAttributes, children?: any[]) {
+
+  if (children) throw new Error('a view cannot have children')
 
   let vctrl = new ViewController(attrs.name)
 
