@@ -43,7 +43,7 @@ export class Router extends Eventable<Router> {
     this._linked = false // true if linked to location.
   }
 
-  default(name: string, params: any) {
+  default(name: string, params?: StateParams) {
     this._default = {name, params}
     return this
   }
