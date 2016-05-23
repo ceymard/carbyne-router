@@ -2,13 +2,28 @@
 import {o, merge, Eventable, Observable, Observer} from 'carbyne';
 import {Router} from './router'
 
+export interface StateParams {
+  [name: string]: any
+}
+
+export interface ActiveStates {
+
+	params: StateParams
+	current_state: State
+
+	states: {
+		[state_name: string]: State
+	}
+
+}
 
 /**
  *
  */
-export class State extends Eventable {
+export class State extends Eventable<State> {
 
 	public name: string
+	public parent: State
 	private _definition: StateDefinition
 
 	private _router: Router
@@ -31,7 +46,7 @@ export class State extends Eventable {
 	 * Go to the given state of the current router.
 	 * Also, pre-fills the asked params.
 	 */
-	go(state_name: string, params: Object) { this._router.go(state_name, params) }
+	go(state_name: string, params: StateParams) { this._router.go(state_name, params) }
 
 	destroy() {
 		this.trigger('destroy')
@@ -59,7 +74,7 @@ export class StateDefinition {
 	private _full_url: string
 	private _router: Router
 
-	constructor(name: string, url: string, kls: typeof State, parent, router) {
+	constructor(name: string, url: string, kls: typeof State, parent: StateDefinition, router: Router) {
 		this.name = name
 		this.url_part = url
 		this._full_url = ''
@@ -95,7 +110,7 @@ export class StateDefinition {
 		this._full_url = full_url
 	}
 
-	getUrl(params = {}) {
+	getUrl(params: StateParams = {}) {
 		if (this.virtual) throw new Error('Virtual states don\'t have urls.')
 		let url = this._full_url
 		for (let p of this.param_names) {
@@ -104,7 +119,7 @@ export class StateDefinition {
 		return url
 	}
 
-	match(url) {
+	match(url: string) {
 		if (this.virtual) return null
 
 		let matches = this.regexp.exec(url)
@@ -113,7 +128,7 @@ export class StateDefinition {
 		if (!matches) return null
 
 		// build the params.
-		let params = {}
+		let params: StateParams = {}
 		let pars = this.param_names
 		let l = this.param_names.length
 		for (let i = 0; i < l; i++) {
@@ -122,7 +137,7 @@ export class StateDefinition {
 		return params
 	}
 
-	isParent(state) {
+	isParent(state: StateDefinition) {
 		while (state.parent) {
 			if (state === this) return true
 			state = state.parent
@@ -141,7 +156,7 @@ export class StateDefinition {
 	 * @param  {Object} new_params  ...
 	 * @return {boolean}
 	 */
-	_sameParams(prev_params, new_params) {
+	_sameParams(prev_params: StateParams, new_params: StateParams) {
 		for (var name of this.param_names) {
 			if (prev_params[name] !== new_params[name])
 				return false;
@@ -154,44 +169,37 @@ export class StateDefinition {
 	 * 			all inline.
 	 * @param  {Object} state The state object to activate.
 	 */
-	activate(params, previous) {
+	activate(params: StateParams, previous: ActiveStates): Promise<ActiveStates> {
 
 		// If we have a parent, we start by trying to activate
 		return (this.parent ?
 			this.parent.activate(params, previous)
-		: 	Promise.resolve({state: new State('__root__', this._router), all: {$$params: params}})
-		).then(act => {
+		: Promise.resolve({current_state: null, params: params, states: {}})
+		).then((act: ActiveStates) => {
 
 			// If the state is already active, then there
 			// is no need to try to reactivate it, unless of course
 			// params have changed.
-			if (previous[this.name] && this._sameParams(previous.$$params, params)) {
-				act.state = act.all[this.name] = previous[this.name]
+			if (previous.states[this.name] && this._sameParams(previous.params, params)) {
+				act.current_state = act.states[this.name] = previous.states[this.name]
 				return act
 			}
 
 			// Build the parameter list
-			const prms = []
-			for (var pname of this.param_names)
-				prms.push(params[pname])
+			const prms = this.param_names.map(name => params[name])
 
 			const kls = this._kls
 			const own_init = kls.prototype.hasOwnProperty('__init__') ? kls.prototype.__init__ : null
 			const state = new kls(this.name, this._router)
 
-			// Récupération des valeurs par copie brutale.
-			for (let name in act.state) {
-				if (act.state.hasOwnProperty(name)) {
-					state[name] = act.state[name]
-				}
+			// copy values that were initialized by __init__ from the parent state.
+			if (act.current_state) {
+				merge(state, act.current_state)
 			}
 
-			// StateInstance.prototype = act.state
-			// const state = new StateInstance
-
-			return Promise.resolve(own_init ? own_init.apply(state, prms) : null).then(nothing => {
-				act.all[this.name] = state
-				act.state = state
+			return Promise.resolve(own_init ? own_init.apply(state, prms) : null).then(() => {
+				act.states[this.name] = state
+				act.current_state = state
 				return act
 			})
 		})

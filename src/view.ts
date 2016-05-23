@@ -71,7 +71,7 @@ export interface ViewAttributes extends BasicAttributes {
  */
 export function View(attrs: ViewAttributes, children?: any[]) {
 
-  if (children) throw new Error('a view cannot have children')
+  if (children && children.length > 0) throw new Error('a view cannot have children')
 
   let vctrl = new ViewController(attrs.name)
 

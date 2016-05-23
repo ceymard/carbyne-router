@@ -1,17 +1,19 @@
 
-import {o, merge, Eventable, Observable} from 'carbyne';
-import {StateDefinition, State} from './state';
+import {o, merge, Eventable, Observable, Atom} from 'carbyne';
+import {StateDefinition, State, StateParams, ActiveStates} from './state';
 
 /**
  * A router that can link to window.location.
  */
-export class Router extends Eventable {
+export class Router extends Eventable<Router> {
 
   public o_state: Observable<State>
-  public o_active_states: Observable<{[name: string]: State}>
+  // public o_active_states: Observable<{[name: string]: State}>
+  public o_active_states: Observable<ActiveStates>
+
   public current_state_def: StateDefinition
 
-  private _params: Object
+  private _params: StateParams = {}
   private _activating: boolean
   private _state_defs: {[name: string]: StateDefinition}
   private _linked: boolean
@@ -23,7 +25,7 @@ export class Router extends Eventable {
 
     this._state_defs = {}
 
-    this.o_active_states = o({})
+    this.o_active_states = o({states: {}, params: {}, current_state: null})
     this.o_state = o({})
     this.current_state_def = null
 
@@ -107,7 +109,7 @@ export class Router extends Eventable {
    * @param  {[type]} params     [description]
    * @return {Promise} A promise that tells when the state has been fully activated.
    */
-  go(state_name: string, params = {}) {
+  go(state_name: string, params: StateParams = {}): Promise<State> {
 
     if (this._activating)
       this.redirect(state_name, params);
@@ -121,12 +123,13 @@ export class Router extends Eventable {
       if (!(x in params)) _params[x] = this._params[x]
 
     if (!state) throw new Error('no such state');
-    return this._activate(this._state_defs[state_name], _params).then(() => {
+    return this._activate(this._state_defs[state_name], _params).then((state) => {
       if (this._linked) {
         var url = this.current_state_def.getUrl(_params);
         this._triggered_change = true;
         window.location.hash = '#' + url;
       }
+      return state
     });
 
   }
@@ -135,35 +138,37 @@ export class Router extends Eventable {
    * Perform the activation of the new state.
    * If the activation raised an error, triggers the 'reject' event.
    */
-  _activate(state: StateDefinition, params: Object): Promise<any> {
+  _activate(def: StateDefinition, params: StateParams): Promise<State> {
 
     const previous_states = this.o_active_states.get()
-    this.trigger('activate:before', state, params)
+
+    this.trigger('activate:before', def, params)
     this._activating = true
 
     // Try activating the new state.
-    return state.activate(params, previous_states).then(result => {
+    return def.activate(params, previous_states).then((result: ActiveStates) => {
 
       // The last state to be computed is now our parent.
       // XXX could be useful
-      this.o_active_states.set(result.all)
-      this.o_state.set(result.state)
-      this.current_state_def = result.state._definition
-      this._params = params
+      this.o_active_states.set(result)
+      this.o_state.set(result.current_state)
 
-      let name = null
+      this.current_state_def = def // result.state._definition
+      this._params = result.params
 
       // console.log(previous_states)
-      for (name in previous_states)
-        if (!result.all[name]) previous_states[name].destroy()
+      for (let name in previous_states.states)
+        if (!result.states[name]) previous_states.states[name].destroy()
 
       // XXX destroy the now inactive states.
 
       // Activate the new views.
-      this.trigger('activate', state, params)
+      this.trigger('activate', def, params)
       this._activating = false
 
-    }).catch(failure => {
+      return result.current_state
+
+    }).catch((failure: Error) => {
       console.error(failure)
       this._activating = false
 
@@ -171,8 +176,8 @@ export class Router extends Eventable {
         return this.go(failure.name, failure.args)
       }
       // A state has rejected the activation.
-      this.trigger('reject', failure, state, params)
-
+      this.trigger('reject', failure, def, params)
+      return null
     })
 
   }
@@ -183,7 +188,7 @@ export class Router extends Eventable {
   linkWithLocation() {
     this._linked = true
 
-    let change = (event) => {
+    let change = () => {
       let hash = window.location.hash
       if (!this._triggered_change) {
         this.setUrl(hash.split('?')[0].slice(1))
@@ -192,19 +197,19 @@ export class Router extends Eventable {
     }
 
     window.addEventListener('hashchange', change)
-    change(null)
+    change()
   }
 
   /**
    * A decorator that sets up the href
    */
-  href(name: string, params?: Object) {
-    return (atom) => {
+  href(name: string, params?: StateParams): (a: Atom) => Atom {
+    return (atom: Atom) => {
       let state = this._state_defs[name]
 
       atom.on('create', (ev) => {
 
-        var evaluate = active => {
+        var evaluate = (active: boolean) => {
 
           if (active) atom.element.classList.add('state-active')
           else atom.element.classList.remove('state-active')
@@ -217,14 +222,14 @@ export class Router extends Eventable {
         }
 
         atom.observe(params, (p) => {
-          atom.element.href = state ? '#' + state.getUrl(params) : ''
+          (atom.element as any).href = state ? '#' + state.getUrl(params) : ''
         })
 
-        atom.observe(this.o_active_states, (states) => {
-          if (!states[name]) return evaluate(false)
+        atom.observe(this.o_active_states, (active_states) => {
+          if (!active_states.states || !active_states.states[name]) return evaluate(false)
           if (!params) return evaluate(true)
 
-          const pars = states.$$params
+          const pars = active_states.params
 
           for (let x in pars) {
             if (pars[x] !== params[x].toString()) return evaluate(false)
@@ -233,6 +238,8 @@ export class Router extends Eventable {
         })
 
       })
+
+      return atom
     }
   }
 
