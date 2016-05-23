@@ -2,6 +2,11 @@
 import {o, merge, Eventable, Observable, Atom} from 'carbyne';
 import {StateDefinition, State, StateParams, ActiveStates} from './state';
 
+export class RedirectError extends Error {
+  params: StateParams
+  name: string
+}
+
 /**
  * A router that can link to window.location.
  */
@@ -43,8 +48,11 @@ export class Router extends Eventable<Router> {
     return this
   }
 
-  redirect(name: string, args: any = {}) {
-    throw {redirect: true, name, args}
+  redirect(name: string, params: StateParams = {}) {
+    var r = new RedirectError(`redirecting to ${name}`)
+    r.name = name
+    r.params = params
+    throw r
   }
 
   /**
@@ -168,12 +176,12 @@ export class Router extends Eventable<Router> {
 
       return result.current_state
 
-    }).catch((failure: Error) => {
+    }).catch((failure: Error|RedirectError) => {
       console.error(failure)
       this._activating = false
 
-      if (failure.redirect) {
-        return this.go(failure.name, failure.args)
+      if (failure instanceof RedirectError) {
+        return this.go(failure.name, failure.params)
       }
       // A state has rejected the activation.
       this.trigger('reject', failure, def, params)
