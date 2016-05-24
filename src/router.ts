@@ -10,7 +10,7 @@ export class RedirectError extends Error {
 /**
  * A router that can link to window.location.
  */
-export class Router extends Eventable<Router> {
+export class Router extends Eventable {
 
   public o_state: Observable<State>
   // public o_active_states: Observable<{[name: string]: State}>

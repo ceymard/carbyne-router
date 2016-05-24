@@ -20,7 +20,7 @@ export interface ActiveStates {
 /**
  *
  */
-export class State extends Eventable<State> {
+export class State extends Eventable {
 
 	public name: string
 	public parent: State
