@@ -6,7 +6,6 @@ export class ViewAtom extends VirtualAtom {
 
   constructor(name: string) {
     super(`view<${name}>`)
-    this.name = `View<${name}>`
   }
 
 }
