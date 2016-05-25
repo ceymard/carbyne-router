@@ -26,7 +26,7 @@ export class State extends Eventable {
 	public parent: State
 	private _definition: StateDefinition
 
-	private _router: Router
+	protected _router: Router
 	private __proto__: State
 
 	constructor(name: string, router: Router) {
@@ -46,7 +46,7 @@ export class State extends Eventable {
 	 * Go to the given state of the current router.
 	 * Also, pre-fills the asked params.
 	 */
-	go(state_name: string, params: StateParams) { this._router.go(state_name, params) }
+	go(state_name: string, params?: StateParams) { this._router.go(state_name, params) }
 
 	destroy() {
 		this.trigger('destroy')
