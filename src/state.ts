@@ -24,6 +24,7 @@ export class State extends Eventable {
 
 	public name: string
 	public parent: State
+	public params: StateParams
 	private _definition: StateDefinition
 
 	protected _router: Router
@@ -176,7 +177,6 @@ export class StateDefinition {
 			this.parent.activate(params, previous)
 		: Promise.resolve({current_state: null, params: params, states: {}})
 		).then((act: ActiveStates) => {
-
 			// If the state is already active, then there
 			// is no need to try to reactivate it, unless of course
 			// params have changed.
@@ -186,7 +186,7 @@ export class StateDefinition {
 			}
 
 			// Build the parameter list
-			const prms = this.param_names.map(name => params[name])
+			// const prms = this.param_names.map(name => params[name])
 
 			const kls = this._kls
 			const own_init = kls.prototype.hasOwnProperty('__init__') ? kls.prototype.__init__ : null
@@ -196,8 +196,9 @@ export class StateDefinition {
 			if (act.current_state) {
 				merge(state, act.current_state)
 			}
+			state.params = params
 
-			return Promise.resolve(own_init ? own_init.apply(state, prms) : null).then(() => {
+			return Promise.resolve(own_init ? own_init.call(state, params) : null).then(() => {
 				act.states[this.name] = state
 				act.current_state = state
 				return act
