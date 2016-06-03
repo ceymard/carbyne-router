@@ -41,7 +41,7 @@ export class State extends Eventable {
 		return Promise.resolve(true)
 	}
 
-	observe<T>(obs: Observable<T>, cbk: Observer<T>) { this.on('destroy', obs.addObserver(o(cbk))) }
+	observe<T>(obs: Observable<T>, cbk: Observer<T>) { this.on('destroy', obs.addObserver(cbk)) }
 
 	/**
 	 * Go to the given state of the current router.
