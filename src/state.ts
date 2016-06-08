@@ -194,7 +194,12 @@ export class StateDefinition {
 
 			// copy values that were initialized by __init__ from the parent state.
 			if (act.current_state) {
-				merge(state, act.current_state)
+				let src: any = act.current_state
+				let dst: any = state
+				for (let x in src) {
+					if (x[0] !== '_' && src.hasOwnProperty(x))
+						dst[x] = src[x]
+				}
 			}
 			state.params = params
 
