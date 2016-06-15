@@ -30,8 +30,8 @@ export class Router extends Eventable {
 
     this._state_defs = {}
 
-    this.o_active_states = o({states: {}, params: {}, current_state: null})
-    this.o_state = o({})
+    this.o_active_states = o({states: {} as {[name: string]: State}, params: {}, current_state: null})
+    this.o_state = o(null)
     this.current_state_def = null
 
     this._params = {}
