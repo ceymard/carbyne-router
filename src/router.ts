@@ -205,7 +205,7 @@ export class Router extends Eventable {
     }
 
     window.addEventListener('hashchange', change)
-    change()
+    if (!this._activating) change()
   }
 
   /**
