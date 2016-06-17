@@ -176,7 +176,7 @@ export class Router extends Eventable {
 
       return result.current_state
 
-    }).catch((failure: Error|RedirectError) => {
+    }, (failure: Error|RedirectError) => {
       console.error(failure)
       this._activating = false
 

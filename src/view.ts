@@ -50,7 +50,7 @@ export class ViewController extends Controller {
     this.atom.empty().then(e => {
       this.atom.append(this._next_content)
       this._next_content = null
-    }).catch(e => console.error(e)) // detach the children, remove the children.
+    }, e => console.error(e)) // detach the children, remove the children.
   }
 
   setRouter(router: Router) {
