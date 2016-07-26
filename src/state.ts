@@ -1,5 +1,5 @@
 
-import {o, merge, Eventable, Observable, Observer} from 'carbyne';
+import {Eventable, Observable, Observer} from 'carbyne';
 import {Router} from './router'
 
 export interface StateParams {
@@ -25,10 +25,9 @@ export class State extends Eventable {
 	public name: string
 	public parent: State
 	public params: StateParams
-	private _definition: StateDefinition
+
 
 	protected _router: Router
-	private __proto__: State
 
 	constructor(name: string, router: Router) {
 		super()
