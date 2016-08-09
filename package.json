@@ -5,8 +5,10 @@
   "description": "A client-side router for Carbyne.",
   "license": "MIT",
   "main": "./src/index.js",
-  "typings": "./src/index.d.ts",
+  "typings": "./index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build:dts": "dts-bundle --name carbyne-router --main src/index.d.ts --out ../index.d.ts",
+    "build:js": "tsc",
+    "build": "npm run build:js && npm run build:dts"
   }
 }

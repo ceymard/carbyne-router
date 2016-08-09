@@ -1,5 +1,7 @@
 node_modules
-typings
-*.d.ts
+elt
 *.js
+src/**/*.d.ts
 *.map
+._*
+typings
