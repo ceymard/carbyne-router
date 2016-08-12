@@ -10,5 +10,9 @@
     "build:dts": "dts-bundle --name carbyne-router --main src/index.d.ts --out ../index.d.ts",
     "build:js": "tsc",
     "build": "npm run build:js && npm run build:dts"
+  },
+  "devDependencies": {
+    "@types/es6-collections": "0.0.28",
+    "@types/es6-promise": "0.0.29"
   }
 }

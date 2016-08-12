@@ -8,13 +8,8 @@
         "noImplicitReturns": true,
         "noLib": false
     },
-    "filesGlob": [
-        "./**/*.ts",
-        "!./node_modules/**/*.ts"
-    ],
     "files": [
-        "./src/index.ts",
-        "./typings/globals/es6-promise/index.d.ts"
+        "./src/index.ts"
     ]
 
 }
